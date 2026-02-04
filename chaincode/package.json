@@ -1,0 +1,12 @@
+{
+  "name": "sociora-chaincode",
+  "version": "1.0.0",
+  "description": "Sociora transaction ledger chaincode",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "fabric-contract-api": "^2.5.0"
+  }
+}
