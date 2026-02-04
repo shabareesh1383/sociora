@@ -1,2 +1,488 @@
-# sociora
-Modern social media app
+# Sociora MVP (Blockchain Video Platform)
+
+Beginner-friendly MVP prototype where creators upload videos and users can invest in them.
+This project uses a **mock blockchain ledger** by default, but can switch to **Hyperledger Fabric**
+for local development.
+
+## Project Structure
+```
+frontend/   # React (Vite)
+backend/    # Node.js + Express + MongoDB
+blockchain/ # Ledger abstraction + implementations
+chaincode/  # Hyperledger Fabric smart contract
+fabric/     # Local Fabric network scripts
+```
+
+## Features
+- **Creator Authentication** (JWT-based signup/login)
+- **Video Upload** (local file storage in `/backend/uploads`)
+- **Ledger Abstraction** (mock or Fabric)
+- **Investment Flow** (recorded on ledger)
+- **Transparency Dashboard** (view all transactions)
+
+## Ledger Abstraction (Why This Matters)
+The backend depends on a **ledger interface**, not a concrete implementation.
+That means controller/route logic never changes when we swap ledgers.
+
+- `LedgerInterface` defines:
+  - `recordTransaction(tx)`
+  - `getAllTransactions()`
+- `MockLedger` stores transactions in `blockchain/ledger.json` (append-only).
+- `BlockchainLedger` connects to Hyperledger Fabric.
+- `LEDGER_TYPE` picks which ledger is used:
+  - `mock` (default)
+  - `blockchain` (Fabric adapter)
+
+When you are ready to go deeper with Fabric (multiple orgs, ordering, endorsement
+policies), you only update the Fabric adapter—not your routes.
+
+## Security & Audit Model (Beginner-Friendly)
+- **Source of truth**: When `LEDGER_TYPE=blockchain`, Hyperledger Fabric is the
+  canonical ledger. The backend only submits transactions and reads results; it
+  does not decide outcomes or mutate historical records.
+- **Trust boundaries**:
+  - The **backend** validates payload shape and forwards requests to the ledger.
+  - The **chaincode** enforces append-only storage, schema validation, and
+    deterministic timestamps based on the Fabric transaction time.
+  - **Clients** cannot directly write to the ledger; all writes go through the
+    backend + chaincode validation.
+- **Assumptions**: This is local dev only (single org, single peer). Security
+  hardening like multi-org policies, TLS pinning, or production access control
+  is out of scope for the MVP.
+
+## Domain Model (Conceptual, No Code Changes Yet)
+These are the **core business concepts** and their boundaries. This is only a
+design layer—no new APIs or controllers are added.
+
+- **Creator**: An authenticated user who uploads videos. Owns content metadata,
+  receives investments, and is referenced by `creatorId`/`toCreator`.
+- **Investor**: An authenticated user who invests in creators or specific videos.
+  Initiates investment requests and is referenced by `fromUser`.
+- **Video**: Metadata describing uploaded content (`title`, `description`,
+  `creatorId`, `filePath`). The video itself is stored locally for MVP.
+- **Investment**: A domain intent that represents “someone invested amount X in
+  a video/creator.” This is **not** a ledger entry yet; it is a business-level
+  action that becomes a transaction after validation.
+- **Transaction (ledger-level)**: The immutable, append-only record written to
+  the ledger (`txId`, `videoId`, `fromUser`, `toCreator`, `amount`, `timestamp`).
+  This is the source of truth for audits.
+
+## Domain Events (Conceptual, No New Features)
+Events describe **what happened** in the system without adding new APIs. Each
+event is a structured message that could be emitted later by services.
+
+- **VideoUploaded**
+  - When: a creator uploads a video successfully.
+  - Carries: `videoId`, `creatorId`, `title`, `timestamp`.
+- **InvestmentMade**
+  - When: a user submits a valid investment request.
+  - Carries: `videoId`, `fromUser`, `toCreator`, `amount`, `timestamp`.
+- **TransactionRecorded**
+  - When: a transaction is accepted by the ledger adapter.
+  - Carries: `txId`, `videoId`, `fromUser`, `toCreator`, `amount`, `timestamp`.
+- **LedgerWriteConfirmed**
+  - When: the ledger confirms the write (Fabric commit or mock success).
+  - Carries: `txId`, `ledgerType`, `timestamp`.
+
+## Event Flow Design (Textual Diagram)
+This is the **conceptual request flow**, showing separation of domain vs.
+infrastructure logic.
+
+```
+API Request
+  → Validation (controller + basic payload checks)
+  → Domain Event (e.g., InvestmentMade)
+  → Ledger Adapter (mock or Fabric)
+  → Ledger (append-only, source of truth)
+```
+
+- **Domain logic**: validates inputs and expresses “what happened” via events.
+- **Infrastructure logic**: writes to the ledger and reads back results.
+
+## Proposed Code Structure (No File Moves Yet)
+This is a **suggested future layout** to keep domain logic clean and testable:
+
+```
+domain/
+  entities/        # Creator, Investor, Video, Investment, Transaction
+  valueObjects/    # IDs, Money, Timestamp
+events/
+  types/           # Event schemas (VideoUploaded, InvestmentMade, etc.)
+  handlers/        # Side-effects: write to ledger, notify, etc.
+services/
+  investmentService.js  # Orchestrates validation + event emission
+  videoService.js       # Handles video upload flow
+```
+
+## Why Event-Driven Design
+- **Auditability**: events provide an explicit trail of intent and outcomes.
+- **Scalability**: services can react to events without tight coupling.
+- **Future-proofing**: adding features later becomes “subscribe to events.”
+
+## Lifecycle & State Modeling (Design-Only)
+Lifecycle rules prevent ambiguous states and make audits deterministic. This is
+documentation only—no APIs or controllers change.
+
+### Video Lifecycle
+**States**: `Draft` → `Uploaded` → `Archived`  
+**Initial**: `Draft`  
+**Terminal**: `Archived`  
+**Allowed transitions**:
+- `Draft` → `Uploaded` (event: `VideoUploaded`)
+- `Uploaded` → `Archived` (admin or creator action)
+**Invalid transitions**:
+- `Archived` → `Uploaded` (immutability)
+- `Draft` → `Archived` without upload
+
+### Investment Lifecycle
+**States**: `Proposed` → `Recorded` → `Confirmed` → `Failed`  
+**Initial**: `Proposed`  
+**Terminal**: `Confirmed`, `Failed`  
+**Allowed transitions**:
+- `Proposed` → `Recorded` (event: `InvestmentMade`)
+- `Recorded` → `Confirmed` (event: `LedgerWriteConfirmed`)
+- `Recorded` → `Failed` (ledger write error)
+**Invalid transitions**:
+- `Confirmed` → `Recorded` (no rewrites)
+- `Failed` → `Confirmed` without a new `InvestmentMade`
+
+### Creator Lifecycle
+**States**: `Pending` → `Active` → `Suspended` → `Retired`  
+**Initial**: `Pending` (after signup, before first upload)  
+**Terminal**: `Retired`  
+**Allowed transitions**:
+- `Pending` → `Active` (event: `VideoUploaded`)
+- `Active` → `Suspended` (policy/admin action)
+- `Suspended` → `Active` (manual review)
+- `Active` → `Retired` (creator action)
+**Invalid transitions**:
+- `Retired` → `Active` (explicit re-onboarding required)
+
+### State Transition Triggers (Event → Transition)
+- **VideoUploaded**: `Video.Draft → Uploaded`, `Creator.Pending → Active`  
+  **Requires**: `videoId`, `creatorId`, `title`  
+  **Invariant**: creator exists and is authorized to upload.
+- **InvestmentMade**: `Investment.Proposed → Recorded`  
+  **Requires**: `videoId`, `fromUser`, `toCreator`, `amount`  
+  **Invariant**: amount > 0; video exists.
+- **TransactionRecorded**: append-only ledger write (no state reversal)  
+  **Requires**: `txId`, `videoId`, `fromUser`, `toCreator`, `amount`  
+  **Invariant**: txId unique.
+- **LedgerWriteConfirmed**: `Investment.Recorded → Confirmed`  
+  **Requires**: `txId`, `ledgerType`  
+  **Invariant**: ledger adapter returned success.
+
+### Ledger vs Backend Responsibility
+- **On-chain (ledger enforced)**:
+  - Append-only `Transaction` writes.
+  - Idempotency on `txId`.
+  - Deterministic timestamps.
+- **Off-chain (backend enforced)**:
+  - `Video`, `Creator`, and `Investment` state transitions.
+  - Validation that a video/creator exists before proposing an investment.
+**Why split?** The ledger guarantees immutable audit history; the backend owns
+mutable product state that evolves with business rules.
+
+### Failure & Edge Cases
+- **Ledger write fails**: keep `Investment` in `Recorded` or move to `Failed`;
+  allow a retry that emits a new `InvestmentMade` with a new `txId`.
+- **Duplicate events**: handle idempotently (same `txId` returns existing record).
+- **Retries**: only retry ledger submission with a new `txId` if the ledger did
+  not confirm the original write.
+
+### Future Logic Readiness
+- **Revenue splits**: run after `LedgerWriteConfirmed` for accurate totals.
+- **Investor ROI**: compute from `Transaction` history (source of truth).
+- **Refunds/clawbacks**: modeled as new compensating transactions, not edits.
+- **Regulatory constraints**: state machine gating (e.g., `Suspended`) prevents
+  new investments without altering ledger history.
+
+## Why Lifecycle Modeling Is Critical
+- Prevents “silent” state drift between backend and ledger.
+- Makes audits and incident response deterministic.
+- Enables future features without controller changes.
+
+## Economic Model & Value Flows (Design-Only)
+This section defines **how value moves** through the platform without
+implementing smart contracts or guarantees.
+
+### Value Participants (Roles & Incentives)
+- **Platform**: Maintains infrastructure, compliance posture, and trust. Incentive:
+  sustainable fees aligned with long-term creator success.
+- **Creator**: Produces content and attracts investment. Incentive: access to
+  capital and predictable, transparent payouts.
+- **Investor (subscriber-investor)**: Funds creators in exchange for potential
+  upside or perks. Incentive: exposure to creator growth with transparent ledger
+  records (no guaranteed returns).
+
+### Revenue Sources (MVP vs Future)
+- **MVP**: Investments (capital commitments recorded on the ledger).
+- **Future**: Content monetization (non-ad), creator tool subscriptions,
+  template/asset marketplace fees, premium analytics.
+
+### Revenue Distribution Rules (Design-Only)
+- **When distributable**: After `LedgerWriteConfirmed` and any off-chain
+  settlement checks (e.g., payout schedule).
+- **Allowed states**: `Investment.Confirmed` only.
+- **Split logic (high-level)**:
+  - **Deterministic components**: fixed platform fee + creator allocation.
+  - **Variable components**: optional performance-based share based on creator
+    milestones (future).
+- **No percentages defined**: only structure; numbers are policy decisions.
+
+### Investor ROI Model (Conceptual)
+- **Return meaning**: exposure to creator performance or revenue share; **no
+  guaranteed profit**.
+- **Time-based vs performance-based**: may combine time-locked participation
+  with performance triggers, but must avoid “pay new investors with old funds.”
+- **Anti-Ponzi constraints**:
+  - Returns are tied to creator outcomes or external revenue, not new inflows.
+  - Transparent ledger provides auditability of distributions.
+- **Transparency preserved**: all distributions and allocations reference
+  immutable ledger transactions.
+
+### Platform Sustainability (No Ads)
+- **Fee models**: small platform fee on distributions, premium tooling for
+  creators, optional investor analytics.
+- **Trust alignment**: fees only on successful outcomes; clear on-ledger records
+  reduce hidden costs.
+
+### Legal & Regulatory Awareness (Non-Jurisdictional)
+- **Securities-like risk**: investments tied to expected returns can resemble
+  securities in some regions.
+- **Mitigation at design level**:
+  - Clear disclosures: no guaranteed returns.
+  - Transparent ledger for audit trails.
+  - Optional access controls or jurisdictional gating in future.
+- **Why consortium blockchain helps**: shared governance, tamper-evident records,
+  and consistent auditability across participants.
+
+### Future-Proofing the Economic Model
+- **Multiple creator funds**: model portfolios as separate investment pools
+  without changing core ledger design.
+- **Tiered investments**: add tiers as metadata on transactions.
+- **DAO-like governance**: introduce voting events without changing transaction
+  schema (new event types + handlers).
+
+### Value Flow Diagrams (Textual)
+```
+Investor → (InvestmentMade) → Ledger (append-only)
+LedgerWriteConfirmed → Distribution Engine (future)
+Distribution → Creator + Platform
+```
+
+```
+Creator → Content Upload → Audience Engagement (future revenue)
+Revenue → Ledger Transaction → Transparent Payouts
+```
+
+### Disclaimers & Assumptions
+- This is **economic design only**; no contracts or guarantees are implemented.
+- Returns are **not guaranteed** and depend on creator outcomes.
+- Percentages and fee schedules are policy decisions to be defined later.
+
+## Revenue Distribution Service (MVP, Off-Chain)
+To avoid premature on-chain complexity, **distribution starts off-chain** in a
+backend service. It produces deterministic distribution records and writes them
+as **new ledger transactions** (append-only).
+
+- **Why off-chain first**: faster iteration, lower cost, and easier compliance
+  review before codifying on-chain.
+- **How it maps to future on-chain contracts**: the same distribution records
+  become inputs to a smart contract once the rules are finalized.
+- **Known limitations**:
+  - No automated payouts (metadata only).
+  - No ROI logic or percentage splits yet.
+  - Distribution rules are configuration-driven placeholders.
+
+## Settlement & Accounting Model (Design-Only)
+Settlement separates **allocation intent** from **payable value**. This ensures
+auditability before any money moves.
+
+### Accounting Concepts
+- **Allocation**: a distribution intent derived from a confirmed ledger
+  transaction (e.g., “Creator gets X”). It is not payable yet.
+- **Accrual**: value earned but **not yet payable** (e.g., pending settlement
+  window or compliance checks).
+- **Settlement**: value that is **payable** but not yet paid (queued for future
+  payout execution).
+- **Balance**: net position per beneficiary (allocations + accruals − settlements).
+
+### Settlement State Machine
+**States**: `UNSETTLED` → `ELIGIBLE` → `SETTLED` → `VOIDED`  
+**Initial**: `UNSETTLED`  
+**Terminal**: `SETTLED`, `VOIDED`  
+**Allowed transitions**:
+- `UNSETTLED` → `ELIGIBLE` (allocation passes checks)
+- `ELIGIBLE` → `SETTLED` (payout execution in future)
+- `ELIGIBLE` → `VOIDED` (failed compliance or dispute)
+**Invalid transitions**:
+- `SETTLED` → `ELIGIBLE` (no rewrites)
+- `VOIDED` → `ELIGIBLE` without a new allocation
+
+### Settlement Record (Proposed Structure)
+```
+{
+  settlementId,        // deterministic ID
+  distributionId,      // reference to distribution record
+  sourceTxIds,         // array of source ledger txIds
+  beneficiaryType,     // creator | platform | investor
+  beneficiaryId,       // user or org id
+  amount,              // payable amount (no payout executed)
+  state,               // UNSETTLED | ELIGIBLE | SETTLED | VOIDED
+  createdAt,
+  updatedAt
+}
+```
+
+Minimal supporting helper (no API changes): `backend/services/settlementService.js`.
+
+### Ledger Interaction (Append-Only)
+- **Write**: settlement state changes are recorded as new ledger transactions
+  (e.g., `SETTLEMENT_ELIGIBLE`, `SETTLEMENT_VOIDED`).
+- **No mutation**: historical allocations and settlements are never edited.
+- **Idempotency**: deterministic `settlementId` prevents duplicates.
+
+### Responsibilities Split
+- **Backend enforces**: lifecycle gates, settlement state transitions, and
+  deterministic settlement record creation.
+- **Ledger enforces**: append-only history, idempotent identifiers, timestamps.
+- **Future on-chain**: settlement eligibility rules, payout execution, and
+  automated compliance checks (not implemented).
+
+### Preparation for Future Payouts
+- **Creator payouts**: convert `ELIGIBLE` settlements into paid transactions.
+- **Investor ROI**: compute ROI from settled records (not implemented).
+- **Refunds/clawbacks**: issue compensating settlements without mutating history.
+- **Compliance reporting**: settlement trail provides a clean audit boundary.
+
+### Accounting Flow Diagram (Textual)
+```
+Ledger Transaction → Allocation → Accrual
+Accrual → Settlement(ELIGIBLE) → Settlement(SETTLED) [future payout]
+```
+
+**Note:** No payouts are executed in the MVP.
+
+## Invariants & Test Coverage (Mock Ledger)
+The test suite enforces critical invariants using the MockLedger:
+
+- No distribution without `Investment.CONFIRMED`.
+- No distribution unless `Video.ACTIVE`.
+- Deterministic distribution IDs are idempotent (no duplicate writes).
+- Settlement records are deterministic and fail fast on missing fields.
+
+**Guaranteed by tests**: lifecycle gating, idempotency, and deterministic IDs.  
+**Runtime responsibilities**: real ledger connectivity, production monitoring,
+and on-chain enforcement once payout logic is implemented.
+
+## Future Feature Readiness (No Implementation Yet)
+- **Revenue split**: subscribe to `TransactionRecorded` and calculate splits in
+  a dedicated service without changing controllers.
+- **Investor ROI**: aggregate `InvestmentMade` or ledger transactions to compute
+  ROI over time.
+- **IPFS storage**: extend `VideoUploaded` handler to pin content and store CID.
+- **Notifications**: publish notifications when `LedgerWriteConfirmed` fires.
+
+## Requirements
+- Node.js 18+
+- MongoDB running locally (or a remote MongoDB URI)
+- For Fabric mode: Docker + Docker Compose
+
+## Backend Setup
+```bash
+cd backend
+npm install
+cp .env.example .env
+```
+
+Update `.env` with your settings:
+```
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/sociora
+JWT_SECRET=supersecret
+LEDGER_TYPE=mock
+
+# Fabric (used when LEDGER_TYPE=blockchain)
+FABRIC_WALLET_PATH=./fabric/wallet
+FABRIC_CONNECTION_PROFILE=./fabric/connection.json
+FABRIC_CHANNEL=sociochannel
+FABRIC_CHAINCODE=sociora
+FABRIC_IDENTITY=appUser
+
+# Revenue distribution (MVP placeholder)
+# Example: [{"recipient":"platform","rule":"fee"},{"recipient":"creator","rule":"base"}]
+DISTRIBUTION_SPLIT_CONFIG=[]
+```
+
+Run the backend:
+```bash
+npm run dev
+```
+
+## Frontend Setup
+```bash
+cd frontend
+npm install
+```
+
+Optional: Set API URL if your backend is on a different host/port.
+Create `frontend/.env`:
+```
+VITE_API_URL=http://localhost:5000
+```
+
+Run the frontend:
+```bash
+npm run dev
+```
+
+## Hyperledger Fabric (Local Development)
+This repo includes a **minimal Fabric setup** for local development only.
+It uses a single organization, single peer, and one channel (`sociochannel`).
+
+### 1) Start the Network + Deploy Chaincode
+```bash
+./fabric/network.sh
+```
+This script downloads `fabric-samples` (if missing), starts the test network,
+creates the channel, and deploys the chaincode from `chaincode/`.
+
+### 2) Enroll Admin + Register App User
+```bash
+./fabric/enroll-user.sh
+```
+This script uses the Fabric test application to create a local wallet and copies
+its identity to `fabric/wallet` plus the connection profile to `fabric/connection.json`.
+
+### 3) Switch the Backend to Fabric
+Set in `backend/.env`:
+```
+LEDGER_TYPE=blockchain
+FABRIC_WALLET_PATH=./fabric/wallet
+FABRIC_CONNECTION_PROFILE=./fabric/connection.json
+FABRIC_CHANNEL=sociochannel
+FABRIC_CHAINCODE=sociora
+FABRIC_IDENTITY=appUser
+```
+Restart the backend server.
+
+## Common Errors & Fixes (Fabric)
+- **"Identity not found in wallet"**
+  - Run `./fabric/enroll-user.sh` to create `fabric/wallet`.
+- **"Failed to connect" / discovery errors**
+  - Ensure Docker is running and the test network is up (`./fabric/network.sh`).
+- **Chaincode not found**
+  - Re-run `./fabric/network.sh` to deploy the chaincode.
+
+## Usage
+1. Signup as a **creator** or **user**.
+2. Login to get a JWT (stored in localStorage).
+3. Upload a video (creator).
+4. Click **Invest** on a video (user).
+5. View the **Transparency Dashboard** for all transactions.
+
+## Notes
+- This is a **mock blockchain** for MVP learning purposes.
+- Files are stored locally in `backend/uploads`.
+- The mock ledger is saved to `blockchain/ledger.json` and is append-only.
