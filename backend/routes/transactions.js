@@ -14,14 +14,14 @@ router.post("/invest", auth, async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const transaction = ledger.recordTransaction({
+    const transaction = await ledger.recordTransaction({
       videoId,
       fromUser: req.user.id,
       toCreator,
       amount: Number(amount)
     });
 
-    const ledgerEntries = ledger.getAllTransactions();
+    const ledgerEntries = await ledger.getAllTransactions();
     return res
       .status(201)
       .json({ message: "Investment recorded", transaction, ledger: ledgerEntries });
@@ -31,9 +31,9 @@ router.post("/invest", auth, async (req, res) => {
 });
 
 // Transparency dashboard: list all transactions
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const ledgerEntries = ledger.getAllTransactions();
+    const ledgerEntries = await ledger.getAllTransactions();
     return res.json(ledgerEntries);
   } catch (error) {
     return res.status(500).json({ message: "Failed to load ledger" });

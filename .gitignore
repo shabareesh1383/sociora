@@ -2,3 +2,6 @@ node_modules
 .env
 backend/uploads
 frontend/dist
+fabric-samples
+fabric/wallet
+fabric/connection.json
