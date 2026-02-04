@@ -364,6 +364,18 @@ Accrual → Settlement(ELIGIBLE) → Settlement(SETTLED) [future payout]
 
 **Note:** No payouts are executed in the MVP.
 
+## Invariants & Test Coverage (Mock Ledger)
+The test suite enforces critical invariants using the MockLedger:
+
+- No distribution without `Investment.CONFIRMED`.
+- No distribution unless `Video.ACTIVE`.
+- Deterministic distribution IDs are idempotent (no duplicate writes).
+- Settlement records are deterministic and fail fast on missing fields.
+
+**Guaranteed by tests**: lifecycle gating, idempotency, and deterministic IDs.  
+**Runtime responsibilities**: real ledger connectivity, production monitoring,
+and on-chain enforcement once payout logic is implemented.
+
 ## Future Feature Readiness (No Implementation Yet)
 - **Revenue split**: subscribe to `TransactionRecorded` and calculate splits in
   a dedicated service without changing controllers.
