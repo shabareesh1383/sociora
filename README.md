@@ -295,6 +295,75 @@ as **new ledger transactions** (append-only).
   - No ROI logic or percentage splits yet.
   - Distribution rules are configuration-driven placeholders.
 
+## Settlement & Accounting Model (Design-Only)
+Settlement separates **allocation intent** from **payable value**. This ensures
+auditability before any money moves.
+
+### Accounting Concepts
+- **Allocation**: a distribution intent derived from a confirmed ledger
+  transaction (e.g., “Creator gets X”). It is not payable yet.
+- **Accrual**: value earned but **not yet payable** (e.g., pending settlement
+  window or compliance checks).
+- **Settlement**: value that is **payable** but not yet paid (queued for future
+  payout execution).
+- **Balance**: net position per beneficiary (allocations + accruals − settlements).
+
+### Settlement State Machine
+**States**: `UNSETTLED` → `ELIGIBLE` → `SETTLED` → `VOIDED`  
+**Initial**: `UNSETTLED`  
+**Terminal**: `SETTLED`, `VOIDED`  
+**Allowed transitions**:
+- `UNSETTLED` → `ELIGIBLE` (allocation passes checks)
+- `ELIGIBLE` → `SETTLED` (payout execution in future)
+- `ELIGIBLE` → `VOIDED` (failed compliance or dispute)
+**Invalid transitions**:
+- `SETTLED` → `ELIGIBLE` (no rewrites)
+- `VOIDED` → `ELIGIBLE` without a new allocation
+
+### Settlement Record (Proposed Structure)
+```
+{
+  settlementId,        // deterministic ID
+  distributionId,      // reference to distribution record
+  sourceTxIds,         // array of source ledger txIds
+  beneficiaryType,     // creator | platform | investor
+  beneficiaryId,       // user or org id
+  amount,              // payable amount (no payout executed)
+  state,               // UNSETTLED | ELIGIBLE | SETTLED | VOIDED
+  createdAt,
+  updatedAt
+}
+```
+
+Minimal supporting helper (no API changes): `backend/services/settlementService.js`.
+
+### Ledger Interaction (Append-Only)
+- **Write**: settlement state changes are recorded as new ledger transactions
+  (e.g., `SETTLEMENT_ELIGIBLE`, `SETTLEMENT_VOIDED`).
+- **No mutation**: historical allocations and settlements are never edited.
+- **Idempotency**: deterministic `settlementId` prevents duplicates.
+
+### Responsibilities Split
+- **Backend enforces**: lifecycle gates, settlement state transitions, and
+  deterministic settlement record creation.
+- **Ledger enforces**: append-only history, idempotent identifiers, timestamps.
+- **Future on-chain**: settlement eligibility rules, payout execution, and
+  automated compliance checks (not implemented).
+
+### Preparation for Future Payouts
+- **Creator payouts**: convert `ELIGIBLE` settlements into paid transactions.
+- **Investor ROI**: compute ROI from settled records (not implemented).
+- **Refunds/clawbacks**: issue compensating settlements without mutating history.
+- **Compliance reporting**: settlement trail provides a clean audit boundary.
+
+### Accounting Flow Diagram (Textual)
+```
+Ledger Transaction → Allocation → Accrual
+Accrual → Settlement(ELIGIBLE) → Settlement(SETTLED) [future payout]
+```
+
+**Note:** No payouts are executed in the MVP.
+
 ## Future Feature Readiness (No Implementation Yet)
 - **Revenue split**: subscribe to `TransactionRecorded` and calculate splits in
   a dedicated service without changing controllers.
