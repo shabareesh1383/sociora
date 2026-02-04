@@ -5,13 +5,31 @@ const auth = require("../middleware/auth");
 const router = express.Router();
 const ledger = createLedger();
 
+const validateTransactionPayload = ({ videoId, toCreator, amount }) => {
+  if (!videoId || !toCreator || amount === undefined) {
+    return "Missing required fields";
+  }
+
+  const parsedAmount = Number(amount);
+  if (Number.isNaN(parsedAmount)) {
+    return "amount must be a valid number";
+  }
+
+  if (parsedAmount <= 0) {
+    return "amount must be greater than 0";
+  }
+
+  return null;
+};
+
 // Create an investment transaction
 router.post("/invest", auth, async (req, res) => {
   try {
     const { videoId, toCreator, amount } = req.body;
 
-    if (!videoId || !toCreator || !amount) {
-      return res.status(400).json({ message: "Missing required fields" });
+    const validationError = validateTransactionPayload({ videoId, toCreator, amount });
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
     }
 
     const transaction = await ledger.recordTransaction({

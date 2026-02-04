@@ -36,6 +36,20 @@ That means controller/route logic never changes when we swap ledgers.
 When you are ready to go deeper with Fabric (multiple orgs, ordering, endorsement
 policies), you only update the Fabric adapter—not your routes.
 
+## Security & Audit Model (Beginner-Friendly)
+- **Source of truth**: When `LEDGER_TYPE=blockchain`, Hyperledger Fabric is the
+  canonical ledger. The backend only submits transactions and reads results; it
+  does not decide outcomes or mutate historical records.
+- **Trust boundaries**:
+  - The **backend** validates payload shape and forwards requests to the ledger.
+  - The **chaincode** enforces append-only storage, schema validation, and
+    deterministic timestamps based on the Fabric transaction time.
+  - **Clients** cannot directly write to the ledger; all writes go through the
+    backend + chaincode validation.
+- **Assumptions**: This is local dev only (single org, single peer). Security
+  hardening like multi-org policies, TLS pinning, or production access control
+  is out of scope for the MVP.
+
 ## Requirements
 - Node.js 18+
 - MongoDB running locally (or a remote MongoDB URI)
