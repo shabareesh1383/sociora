@@ -202,6 +202,85 @@ mutable product state that evolves with business rules.
 - Makes audits and incident response deterministic.
 - Enables future features without controller changes.
 
+## Economic Model & Value Flows (Design-Only)
+This section defines **how value moves** through the platform without
+implementing smart contracts or guarantees.
+
+### Value Participants (Roles & Incentives)
+- **Platform**: Maintains infrastructure, compliance posture, and trust. Incentive:
+  sustainable fees aligned with long-term creator success.
+- **Creator**: Produces content and attracts investment. Incentive: access to
+  capital and predictable, transparent payouts.
+- **Investor (subscriber-investor)**: Funds creators in exchange for potential
+  upside or perks. Incentive: exposure to creator growth with transparent ledger
+  records (no guaranteed returns).
+
+### Revenue Sources (MVP vs Future)
+- **MVP**: Investments (capital commitments recorded on the ledger).
+- **Future**: Content monetization (non-ad), creator tool subscriptions,
+  template/asset marketplace fees, premium analytics.
+
+### Revenue Distribution Rules (Design-Only)
+- **When distributable**: After `LedgerWriteConfirmed` and any off-chain
+  settlement checks (e.g., payout schedule).
+- **Allowed states**: `Investment.Confirmed` only.
+- **Split logic (high-level)**:
+  - **Deterministic components**: fixed platform fee + creator allocation.
+  - **Variable components**: optional performance-based share based on creator
+    milestones (future).
+- **No percentages defined**: only structure; numbers are policy decisions.
+
+### Investor ROI Model (Conceptual)
+- **Return meaning**: exposure to creator performance or revenue share; **no
+  guaranteed profit**.
+- **Time-based vs performance-based**: may combine time-locked participation
+  with performance triggers, but must avoid “pay new investors with old funds.”
+- **Anti-Ponzi constraints**:
+  - Returns are tied to creator outcomes or external revenue, not new inflows.
+  - Transparent ledger provides auditability of distributions.
+- **Transparency preserved**: all distributions and allocations reference
+  immutable ledger transactions.
+
+### Platform Sustainability (No Ads)
+- **Fee models**: small platform fee on distributions, premium tooling for
+  creators, optional investor analytics.
+- **Trust alignment**: fees only on successful outcomes; clear on-ledger records
+  reduce hidden costs.
+
+### Legal & Regulatory Awareness (Non-Jurisdictional)
+- **Securities-like risk**: investments tied to expected returns can resemble
+  securities in some regions.
+- **Mitigation at design level**:
+  - Clear disclosures: no guaranteed returns.
+  - Transparent ledger for audit trails.
+  - Optional access controls or jurisdictional gating in future.
+- **Why consortium blockchain helps**: shared governance, tamper-evident records,
+  and consistent auditability across participants.
+
+### Future-Proofing the Economic Model
+- **Multiple creator funds**: model portfolios as separate investment pools
+  without changing core ledger design.
+- **Tiered investments**: add tiers as metadata on transactions.
+- **DAO-like governance**: introduce voting events without changing transaction
+  schema (new event types + handlers).
+
+### Value Flow Diagrams (Textual)
+```
+Investor → (InvestmentMade) → Ledger (append-only)
+LedgerWriteConfirmed → Distribution Engine (future)
+Distribution → Creator + Platform
+```
+
+```
+Creator → Content Upload → Audience Engagement (future revenue)
+Revenue → Ledger Transaction → Transparent Payouts
+```
+
+### Disclaimers & Assumptions
+- This is **economic design only**; no contracts or guarantees are implemented.
+- Returns are **not guaranteed** and depend on creator outcomes.
+- Percentages and fee schedules are policy decisions to be defined later.
+
 ## Future Feature Readiness (No Implementation Yet)
 - **Revenue split**: subscribe to `TransactionRecorded` and calculate splits in
   a dedicated service without changing controllers.
