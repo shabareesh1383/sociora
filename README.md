@@ -7,7 +7,7 @@ This project uses a **mock blockchain ledger** (no real crypto yet).
 ```
 frontend/   # React (Vite)
 backend/    # Node.js + Express + MongoDB
-blockchain/ # Mock blockchain ledger (append-only JSON)
+blockchain/ # Ledger abstraction + implementations
 ```
 
 ## Features
@@ -16,6 +16,22 @@ blockchain/ # Mock blockchain ledger (append-only JSON)
 - **Mock Blockchain Ledger** (append-only transactions)
 - **Investment Flow** (recorded on mock ledger)
 - **Transparency Dashboard** (view all transactions)
+
+## Ledger Abstraction (Future Hyperledger Fabric Ready)
+The backend depends on a **ledger interface**, not a concrete implementation.
+That means controller/route logic never changes when we swap ledgers.
+
+- `LedgerInterface` defines:
+  - `recordTransaction(tx)`
+  - `getAllTransactions()`
+- `MockLedger` stores transactions in `blockchain/ledger.json` (append-only).
+- `BlockchainLedger` is a placeholder for a future Hyperledger Fabric adapter.
+- `LEDGER_TYPE` picks which ledger is used:
+  - `mock` (default)
+  - `blockchain` (throws "Not implemented" today)
+
+When you are ready to integrate Hyperledger Fabric, you only need to implement
+`BlockchainLedger` with the same interface methods—no route/controller changes.
 
 ## Requirements
 - Node.js 18+
@@ -33,6 +49,7 @@ Update `.env` with your settings:
 PORT=5000
 MONGO_URI=mongodb://localhost:27017/sociora
 JWT_SECRET=supersecret
+LEDGER_TYPE=mock
 ```
 
 Run the backend:
