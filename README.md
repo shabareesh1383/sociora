@@ -281,6 +281,20 @@ Revenue → Ledger Transaction → Transparent Payouts
 - Returns are **not guaranteed** and depend on creator outcomes.
 - Percentages and fee schedules are policy decisions to be defined later.
 
+## Revenue Distribution Service (MVP, Off-Chain)
+To avoid premature on-chain complexity, **distribution starts off-chain** in a
+backend service. It produces deterministic distribution records and writes them
+as **new ledger transactions** (append-only).
+
+- **Why off-chain first**: faster iteration, lower cost, and easier compliance
+  review before codifying on-chain.
+- **How it maps to future on-chain contracts**: the same distribution records
+  become inputs to a smart contract once the rules are finalized.
+- **Known limitations**:
+  - No automated payouts (metadata only).
+  - No ROI logic or percentage splits yet.
+  - Distribution rules are configuration-driven placeholders.
+
 ## Future Feature Readiness (No Implementation Yet)
 - **Revenue split**: subscribe to `TransactionRecorded` and calculate splits in
   a dedicated service without changing controllers.
@@ -314,6 +328,10 @@ FABRIC_CONNECTION_PROFILE=./fabric/connection.json
 FABRIC_CHANNEL=sociochannel
 FABRIC_CHAINCODE=sociora
 FABRIC_IDENTITY=appUser
+
+# Revenue distribution (MVP placeholder)
+# Example: [{"recipient":"platform","rule":"fee"},{"recipient":"creator","rule":"base"}]
+DISTRIBUTION_SPLIT_CONFIG=[]
 ```
 
 Run the backend:

@@ -1,9 +1,12 @@
 const express = require("express");
 const createLedger = require("../../blockchain/ledgerFactory");
 const auth = require("../middleware/auth");
+const Video = require("../models/Video");
+const { createRevenueDistributionService } = require("../services/revenueDistributionService");
 
 const router = express.Router();
 const ledger = createLedger();
+const revenueDistributionService = createRevenueDistributionService(ledger);
 
 const validateTransactionPayload = ({ videoId, toCreator, amount }) => {
   if (!videoId || !toCreator || amount === undefined) {
@@ -32,6 +35,11 @@ router.post("/invest", auth, async (req, res) => {
       return res.status(400).json({ message: validationError });
     }
 
+    const video = await Video.findById(videoId);
+    if (!video) {
+      return res.status(404).json({ message: "Video not found" });
+    }
+
     const transaction = await ledger.recordTransaction({
       videoId,
       fromUser: req.user.id,
@@ -39,10 +47,21 @@ router.post("/invest", auth, async (req, res) => {
       amount: Number(amount)
     });
 
+    // Minimal off-chain distribution hook (no payout logic yet).
+    const distributionRecord = await revenueDistributionService.handleEvent({
+      eventType: "LedgerWriteConfirmed",
+      investmentState: "CONFIRMED",
+      videoState: "ACTIVE",
+      transaction
+    });
+
     const ledgerEntries = await ledger.getAllTransactions();
-    return res
-      .status(201)
-      .json({ message: "Investment recorded", transaction, ledger: ledgerEntries });
+    return res.status(201).json({
+      message: "Investment recorded",
+      transaction,
+      distributionRecord,
+      ledger: ledgerEntries
+    });
   } catch (error) {
     return res.status(500).json({ message: "Failed to record transaction" });
   }
