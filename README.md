@@ -119,6 +119,89 @@ services/
 - **Scalability**: services can react to events without tight coupling.
 - **Future-proofing**: adding features later becomes “subscribe to events.”
 
+## Lifecycle & State Modeling (Design-Only)
+Lifecycle rules prevent ambiguous states and make audits deterministic. This is
+documentation only—no APIs or controllers change.
+
+### Video Lifecycle
+**States**: `Draft` → `Uploaded` → `Archived`  
+**Initial**: `Draft`  
+**Terminal**: `Archived`  
+**Allowed transitions**:
+- `Draft` → `Uploaded` (event: `VideoUploaded`)
+- `Uploaded` → `Archived` (admin or creator action)
+**Invalid transitions**:
+- `Archived` → `Uploaded` (immutability)
+- `Draft` → `Archived` without upload
+
+### Investment Lifecycle
+**States**: `Proposed` → `Recorded` → `Confirmed` → `Failed`  
+**Initial**: `Proposed`  
+**Terminal**: `Confirmed`, `Failed`  
+**Allowed transitions**:
+- `Proposed` → `Recorded` (event: `InvestmentMade`)
+- `Recorded` → `Confirmed` (event: `LedgerWriteConfirmed`)
+- `Recorded` → `Failed` (ledger write error)
+**Invalid transitions**:
+- `Confirmed` → `Recorded` (no rewrites)
+- `Failed` → `Confirmed` without a new `InvestmentMade`
+
+### Creator Lifecycle
+**States**: `Pending` → `Active` → `Suspended` → `Retired`  
+**Initial**: `Pending` (after signup, before first upload)  
+**Terminal**: `Retired`  
+**Allowed transitions**:
+- `Pending` → `Active` (event: `VideoUploaded`)
+- `Active` → `Suspended` (policy/admin action)
+- `Suspended` → `Active` (manual review)
+- `Active` → `Retired` (creator action)
+**Invalid transitions**:
+- `Retired` → `Active` (explicit re-onboarding required)
+
+### State Transition Triggers (Event → Transition)
+- **VideoUploaded**: `Video.Draft → Uploaded`, `Creator.Pending → Active`  
+  **Requires**: `videoId`, `creatorId`, `title`  
+  **Invariant**: creator exists and is authorized to upload.
+- **InvestmentMade**: `Investment.Proposed → Recorded`  
+  **Requires**: `videoId`, `fromUser`, `toCreator`, `amount`  
+  **Invariant**: amount > 0; video exists.
+- **TransactionRecorded**: append-only ledger write (no state reversal)  
+  **Requires**: `txId`, `videoId`, `fromUser`, `toCreator`, `amount`  
+  **Invariant**: txId unique.
+- **LedgerWriteConfirmed**: `Investment.Recorded → Confirmed`  
+  **Requires**: `txId`, `ledgerType`  
+  **Invariant**: ledger adapter returned success.
+
+### Ledger vs Backend Responsibility
+- **On-chain (ledger enforced)**:
+  - Append-only `Transaction` writes.
+  - Idempotency on `txId`.
+  - Deterministic timestamps.
+- **Off-chain (backend enforced)**:
+  - `Video`, `Creator`, and `Investment` state transitions.
+  - Validation that a video/creator exists before proposing an investment.
+**Why split?** The ledger guarantees immutable audit history; the backend owns
+mutable product state that evolves with business rules.
+
+### Failure & Edge Cases
+- **Ledger write fails**: keep `Investment` in `Recorded` or move to `Failed`;
+  allow a retry that emits a new `InvestmentMade` with a new `txId`.
+- **Duplicate events**: handle idempotently (same `txId` returns existing record).
+- **Retries**: only retry ledger submission with a new `txId` if the ledger did
+  not confirm the original write.
+
+### Future Logic Readiness
+- **Revenue splits**: run after `LedgerWriteConfirmed` for accurate totals.
+- **Investor ROI**: compute from `Transaction` history (source of truth).
+- **Refunds/clawbacks**: modeled as new compensating transactions, not edits.
+- **Regulatory constraints**: state machine gating (e.g., `Suspended`) prevents
+  new investments without altering ledger history.
+
+## Why Lifecycle Modeling Is Critical
+- Prevents “silent” state drift between backend and ledger.
+- Makes audits and incident response deterministic.
+- Enables future features without controller changes.
+
 ## Future Feature Readiness (No Implementation Yet)
 - **Revenue split**: subscribe to `TransactionRecorded` and calculate splits in
   a dedicated service without changing controllers.
