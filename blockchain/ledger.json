@@ -1,0 +1,356 @@
+[
+  {
+    "txId": "63d72ab0-48ca-4200-af1a-e9dbdd91111d",
+    "timestamp": "2026-02-04T18:04:13.604Z",
+    "videoId": "video-6",
+    "fromUser": "platform",
+    "toCreator": "creator-6",
+    "amount": 40,
+    "transactionType": "DISTRIBUTION",
+    "referenceTxId": "tx-6",
+    "distributionId": "54b32b2543de9611ccae06cd2fbf1a7f8d5297ad931ffd18b25dd11f8cec9852",
+    "eventType": "LedgerWriteConfirmed",
+    "allocations": []
+  },
+  {
+    "txId": "6472527d-73f7-4f3c-ae3d-79cf60ad251c",
+    "timestamp": "2026-02-04T20:41:24.288Z",
+    "videoId": "6983a9b050f249206d0f888e",
+    "fromUser": "6983a2e67acba5a323b93324",
+    "toCreator": "6983a2e67acba5a323b93324",
+    "amount": 100
+  },
+  {
+    "txId": "c7245441-dc6f-48e1-8e61-7f001d6ec669",
+    "timestamp": "2026-02-04T20:41:24.297Z",
+    "videoId": "6983a9b050f249206d0f888e",
+    "fromUser": "platform",
+    "toCreator": "6983a2e67acba5a323b93324",
+    "amount": 100,
+    "transactionType": "DISTRIBUTION",
+    "referenceTxId": "6472527d-73f7-4f3c-ae3d-79cf60ad251c",
+    "distributionId": "d8c9c70cb078cf64b3c76004a4fbf829cae699d89fdc9a16444068e8cfce1853",
+    "eventType": "LedgerWriteConfirmed",
+    "allocations": []
+  },
+  {
+    "txId": "b0700727-36ee-4af6-ac3f-5dcfddce4fd5",
+    "timestamp": "2026-02-05T06:04:43.033Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 1100
+  },
+  {
+    "txId": "2edbdbf2-01ad-478d-81cc-a0270a896c0b",
+    "timestamp": "2026-02-05T06:04:43.035Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "platform",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 1100,
+    "transactionType": "DISTRIBUTION",
+    "referenceTxId": "b0700727-36ee-4af6-ac3f-5dcfddce4fd5",
+    "distributionId": "adb4c769178e92cdee8f7c06766c0890b805a311a40eee083143cd4e7f2026f3",
+    "eventType": "LedgerWriteConfirmed",
+    "allocations": []
+  },
+  {
+    "txId": "3761cce1-c974-4345-ab0a-6e8fefebec4a",
+    "timestamp": "2026-02-05T06:04:45.875Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 1100
+  },
+  {
+    "txId": "8f427442-039f-4e60-bc7d-901bdc45e544",
+    "timestamp": "2026-02-05T06:04:45.877Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "platform",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 1100,
+    "transactionType": "DISTRIBUTION",
+    "referenceTxId": "3761cce1-c974-4345-ab0a-6e8fefebec4a",
+    "distributionId": "d458fa58fdf4ca9944584981bb24704569fb5abc88c878a5e27d9b8f2fcf4934",
+    "eventType": "LedgerWriteConfirmed",
+    "allocations": []
+  },
+  {
+    "txId": "1f289f8c-81f7-4473-b02c-2e80b22aa6c5",
+    "timestamp": "2026-02-05T06:54:27.173Z",
+    "videoId": "6983a9b050f249206d0f888e",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "6983a2e67acba5a323b93324",
+    "amount": 10
+  },
+  {
+    "txId": "47ad9abc-3113-4eb0-b2aa-cf22d27eac3c",
+    "timestamp": "2026-02-05T06:54:27.175Z",
+    "videoId": "6983a9b050f249206d0f888e",
+    "fromUser": "platform",
+    "toCreator": "6983a2e67acba5a323b93324",
+    "amount": 10,
+    "transactionType": "DISTRIBUTION",
+    "referenceTxId": "1f289f8c-81f7-4473-b02c-2e80b22aa6c5",
+    "distributionId": "d52e66559627435a4c33d85739b3a4f2b08ab7012ba122d6a5b7160c824975e3",
+    "eventType": "LedgerWriteConfirmed",
+    "allocations": []
+  },
+  {
+    "txId": "222b5694-1d81-4ba9-8110-44cbd3d5585b",
+    "timestamp": "2026-02-05T07:09:25.786Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 10
+  },
+  {
+    "txId": "a66d4a96-d98b-48b9-a149-0cac5aba9075",
+    "timestamp": "2026-02-05T07:09:25.788Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "platform",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 10,
+    "transactionType": "DISTRIBUTION",
+    "referenceTxId": "222b5694-1d81-4ba9-8110-44cbd3d5585b",
+    "distributionId": "d405e52e7ddded00d2ae58137870dd9793733bf1c82d74ca33dd6933de44a13e",
+    "eventType": "LedgerWriteConfirmed",
+    "allocations": []
+  },
+  {
+    "txId": "7c15e1c4-a011-461f-b109-de4c859aaa48",
+    "timestamp": "2026-02-05T07:09:28.105Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 10
+  },
+  {
+    "txId": "6c96255a-2c22-483c-a4bf-fab5494ba3e3",
+    "timestamp": "2026-02-05T07:09:28.107Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "platform",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 10,
+    "transactionType": "DISTRIBUTION",
+    "referenceTxId": "7c15e1c4-a011-461f-b109-de4c859aaa48",
+    "distributionId": "fa30057376ce2899ba65d2598a7dc5d4b832b08caad410269e849f1c5008a116",
+    "eventType": "LedgerWriteConfirmed",
+    "allocations": []
+  },
+  {
+    "txId": "3d001db4-e84b-4c64-8d28-f02a6db3da09",
+    "timestamp": "2026-02-05T07:09:45.977Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 99
+  },
+  {
+    "txId": "1146b87f-cd93-4118-87b0-6f4dd463013a",
+    "timestamp": "2026-02-05T07:09:45.978Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "platform",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 99,
+    "transactionType": "DISTRIBUTION",
+    "referenceTxId": "3d001db4-e84b-4c64-8d28-f02a6db3da09",
+    "distributionId": "cad3630e25e38f8b840af1cf65a066b36d16cd1525fd2d6e49b2b39e62558827",
+    "eventType": "LedgerWriteConfirmed",
+    "allocations": []
+  },
+  {
+    "txId": "a3720b03-aee1-4844-bda3-e707289d0bed",
+    "timestamp": "2026-02-05T07:09:50.656Z",
+    "videoId": "6983a9b050f249206d0f888e",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "6983a2e67acba5a323b93324",
+    "amount": 99
+  },
+  {
+    "txId": "41d0d952-73e0-4011-8d03-385d572818f2",
+    "timestamp": "2026-02-05T07:09:50.658Z",
+    "videoId": "6983a9b050f249206d0f888e",
+    "fromUser": "platform",
+    "toCreator": "6983a2e67acba5a323b93324",
+    "amount": 99,
+    "transactionType": "DISTRIBUTION",
+    "referenceTxId": "a3720b03-aee1-4844-bda3-e707289d0bed",
+    "distributionId": "d83a7fb535c067a6eb494fa4786ec5fb30280ec2ee7be76d2a46670f135ad463",
+    "eventType": "LedgerWriteConfirmed",
+    "allocations": []
+  },
+  {
+    "txId": "4c84df0c-1814-4d78-8d37-e1d855de067c",
+    "timestamp": "2026-02-05T07:09:52.076Z",
+    "videoId": "6983a9b050f249206d0f888e",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "6983a2e67acba5a323b93324",
+    "amount": 99
+  },
+  {
+    "txId": "73252422-ffb0-4ba7-9efb-65c541ea2182",
+    "timestamp": "2026-02-05T07:09:52.078Z",
+    "videoId": "6983a9b050f249206d0f888e",
+    "fromUser": "platform",
+    "toCreator": "6983a2e67acba5a323b93324",
+    "amount": 99,
+    "transactionType": "DISTRIBUTION",
+    "referenceTxId": "4c84df0c-1814-4d78-8d37-e1d855de067c",
+    "distributionId": "c26fea77cd6bc624dbd405ca06801c0349ff105c05d4ff232fcf3b4c80ee576d",
+    "eventType": "LedgerWriteConfirmed",
+    "allocations": []
+  },
+  {
+    "txId": "bb77f6ab-5651-465e-b441-a5de3617cc18",
+    "timestamp": "2026-02-05T07:55:10.255Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 64
+  },
+  {
+    "txId": "f09ba6a7-2882-479c-b7a4-04956acafab5",
+    "timestamp": "2026-02-05T07:55:12.523Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 64
+  },
+  {
+    "txId": "3e7a5926-6398-4255-8200-fc8835bf1150",
+    "timestamp": "2026-02-05T07:55:18.832Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 64
+  },
+  {
+    "txId": "0db6b5c0-724a-43e0-805a-7409e3560dff",
+    "timestamp": "2026-02-05T07:55:20.437Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 64
+  },
+  {
+    "txId": "43f822b4-674f-4868-91e1-09709146313c",
+    "timestamp": "2026-02-05T07:55:21.333Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 64
+  },
+  {
+    "txId": "4fbdea24-9281-4486-bd9f-968eaa93038c",
+    "timestamp": "2026-02-05T08:08:33.040Z",
+    "videoId": "6983a9b050f249206d0f888e",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "6983a2e67acba5a323b93324",
+    "amount": 10
+  },
+  {
+    "txId": "bb9968db-b68a-4037-9e8a-4ff749f14147",
+    "timestamp": "2026-02-05T08:08:56.584Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 998
+  },
+  {
+    "txId": "c0ccfe7d-e529-4698-8d84-30b4bb640ca4",
+    "timestamp": "2026-02-05T08:08:58.241Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 998
+  },
+  {
+    "txId": "d0263351-4678-4f4b-b14f-9a82d8806cba",
+    "timestamp": "2026-02-05T08:11:11.707Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 567
+  },
+  {
+    "txId": "f82e4ef0-9bc4-44bc-92af-feecb2dedfc1",
+    "timestamp": "2026-02-05T08:11:22.094Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "69843276ed459b69e3b378a3",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 567
+  },
+  {
+    "txId": "936e39f4-f47c-4dea-a69f-07d614713f5c",
+    "timestamp": "2026-02-05T08:25:20.940Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "698453c50f198ea8aeeb4912",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 234
+  },
+  {
+    "txId": "58f88a3c-d937-4fdf-9d0e-9fe92a772808",
+    "timestamp": "2026-02-05T08:25:31.471Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "698453c50f198ea8aeeb4912",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 234
+  },
+  {
+    "txId": "d393b34d-818e-442b-918f-d44ef7596715",
+    "timestamp": "2026-02-05T08:25:31.859Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "698453c50f198ea8aeeb4912",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 234
+  },
+  {
+    "txId": "c74d70a9-8bd5-41b5-92ee-da4c4f69ac05",
+    "timestamp": "2026-02-05T09:00:35.180Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "698453c50f198ea8aeeb4912",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 100
+  },
+  {
+    "txId": "55bf1503-2599-44e2-a241-8f551386bbb7",
+    "timestamp": "2026-02-05T09:00:40.344Z",
+    "videoId": "698432dced459b69e3b378aa",
+    "fromUser": "698453c50f198ea8aeeb4912",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 100
+  },
+  {
+    "txId": "bbe84c05-e76f-4ea6-a2f6-ec44b62610ea",
+    "timestamp": "2026-02-05T09:00:52.853Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "698453c50f198ea8aeeb4912",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 100000
+  },
+  {
+    "txId": "9029b50e-df6f-4336-aca4-033c4fb0c013",
+    "timestamp": "2026-02-05T09:00:53.060Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "698453c50f198ea8aeeb4912",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 100000
+  },
+  {
+    "txId": "6c39d6ac-f62a-4374-bb5d-807acf5c4d62",
+    "timestamp": "2026-02-05T09:00:54.495Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "698453c50f198ea8aeeb4912",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 100000
+  },
+  {
+    "txId": "93ac47db-165a-4bb1-acba-5a96f076a1f5",
+    "timestamp": "2026-02-05T09:00:55.062Z",
+    "videoId": "698432bced459b69e3b378a7",
+    "fromUser": "698453c50f198ea8aeeb4912",
+    "toCreator": "69843276ed459b69e3b378a3",
+    "amount": 100000
+  }
+]

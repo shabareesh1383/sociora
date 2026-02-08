@@ -2,11 +2,14 @@ const express = require("express");
 const createLedger = require("../../blockchain/ledgerFactory");
 const auth = require("../middleware/auth");
 const Video = require("../models/Video");
+const Transaction = require("../models/Transaction");
 const { createRevenueDistributionService } = require("../services/revenueDistributionService");
 
 const router = express.Router();
 const ledger = createLedger();
 const revenueDistributionService = createRevenueDistributionService(ledger);
+
+/* -------------------- helpers -------------------- */
 
 const validateTransactionPayload = ({ videoId, toCreator, amount }) => {
   if (!videoId || !toCreator || amount === undefined) {
@@ -25,14 +28,14 @@ const validateTransactionPayload = ({ videoId, toCreator, amount }) => {
   return null;
 };
 
-// Create an investment transaction
+/* -------------------- INVEST -------------------- */
+
 router.post("/invest", auth, async (req, res) => {
   try {
     const { videoId, toCreator, amount } = req.body;
 
-    const validationError = validateTransactionPayload({ videoId, toCreator, amount });
-    if (validationError) {
-      return res.status(400).json({ message: validationError });
+    if (!videoId || !toCreator || !amount) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
     const video = await Video.findById(videoId);
@@ -40,41 +43,106 @@ router.post("/invest", auth, async (req, res) => {
       return res.status(404).json({ message: "Video not found" });
     }
 
-    const transaction = await ledger.recordTransaction({
+    // 1️⃣ SAVE INVESTMENT (SOURCE OF TRUTH)
+    const investment = await Transaction.create({
       videoId,
-      fromUser: req.user.id,
-      toCreator,
-      amount: Number(amount)
+      investorId: req.user.id,
+      creatorId: toCreator,
+      amount: Number(amount),
+      type: "INVESTMENT"
     });
 
-    // Minimal off-chain distribution hook (no payout logic yet).
-    const distributionRecord = await revenueDistributionService.handleEvent({
-      eventType: "LedgerWriteConfirmed",
-      investmentState: "CONFIRMED",
-      videoState: "ACTIVE",
-      transaction
-    });
+    // 2️⃣ TRY LEDGER (NON-BLOCKING)
+    try {
+      await ledger.recordTransaction({
+        videoId,
+        fromUser: req.user.id,
+        toCreator,
+        amount: Number(amount)
+      });
 
-    const ledgerEntries = await ledger.getAllTransactions();
+      await revenueDistributionService.handleEvent({
+        eventType: "LedgerWriteConfirmed",
+        investmentState: "CONFIRMED",
+        videoState: "ACTIVE",
+        transaction: {
+          videoId,
+          fromUser: req.user.id,
+          toCreator,
+          amount: Number(amount)
+        }
+      });
+    } catch (ledgerError) {
+      console.warn("Ledger failed (ignored):", ledgerError.message);
+    }
+
     return res.status(201).json({
       message: "Investment recorded",
-      transaction,
-      distributionRecord,
-      ledger: ledgerEntries
+      investment
     });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: "Failed to record transaction" });
   }
 });
 
-// Transparency dashboard: list all transactions
+/* -------------------- LEDGER (TRANSPARENCY) -------------------- */
+
 router.get("/", async (req, res) => {
   try {
-    const ledgerEntries = await ledger.getAllTransactions();
+    
     return res.json(ledgerEntries);
   } catch (error) {
     return res.status(500).json({ message: "Failed to load ledger" });
   }
 });
+
+/* -------------------- VIDEO LEDGER -------------------- */
+
+router.get("/video/:videoId", async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    const ledgerEntries = await ledger.getAllTransactions();
+
+    const filtered = ledgerEntries.filter(tx => tx.videoId === videoId);
+    return res.json(filtered);
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to load video ledger" });
+  }
+});
+
+/* -------------------- VIDEO INVESTMENTS (DB) -------------------- */
+
+router.get("/video/:videoId/investments", async (req, res) => {
+  try {
+    const { videoId } = req.params;
+
+    const investments = await Transaction.find({ videoId })
+      .populate("investorId", "name email")
+      .sort({ createdAt: -1 });
+
+    return res.json(investments);
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to load video investments" });
+  }
+});
+
+/* -------------------- MY INVESTMENTS (DB ONLY) -------------------- */
+
+router.get("/me", auth, async (req, res) => {
+  try {
+    const investments = await Transaction.find({
+      investorId: req.user.id,
+      type: "INVESTMENT"
+    })
+      .populate("videoId", "title")
+      .sort({ createdAt: -1 });
+
+    return res.json(investments);
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to load investments" });
+  }
+});
+
 
 module.exports = router;

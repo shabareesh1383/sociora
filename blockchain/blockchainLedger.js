@@ -1,17 +1,28 @@
 const fs = require("fs");
 const path = require("path");
-const { Gateway, Wallets } = require("fabric-network");
 const { v4: uuidv4 } = require("uuid");
 const LedgerInterface = require("./ledgerInterface");
+
+// IMPORTANT:
+// Do NOT require fabric-network at top level.
+// It must be loaded ONLY when blockchain ledger is actually used.
+let Gateway, Wallets;
 
 // Hyperledger Fabric ledger adapter (single org, single peer, local dev only).
 class BlockchainLedger extends LedgerInterface {
   constructor() {
     super();
+
+    // Lazy-load Fabric SDK here
+    if (!Gateway || !Wallets) {
+      ({ Gateway, Wallets } = require("fabric-network"));
+    }
+
     this.channelName = process.env.FABRIC_CHANNEL || "sociochannel";
     this.chaincodeName = process.env.FABRIC_CHAINCODE || "sociora";
     this.walletPath =
-      process.env.FABRIC_WALLET_PATH || path.join(process.cwd(), "fabric", "wallet");
+      process.env.FABRIC_WALLET_PATH ||
+      path.join(process.cwd(), "fabric", "wallet");
     this.ccpPath =
       process.env.FABRIC_CONNECTION_PROFILE ||
       path.join(process.cwd(), "fabric", "connection.json");
@@ -42,7 +53,6 @@ class BlockchainLedger extends LedgerInterface {
     return { gateway, contract };
   }
 
-  // Record a transaction using Fabric chaincode.
   async recordTransaction(transaction) {
     const payload = {
       txId: uuidv4(),
@@ -62,7 +72,6 @@ class BlockchainLedger extends LedgerInterface {
     }
   }
 
-  // Retrieve all transactions from Fabric.
   async getAllTransactions() {
     const { gateway, contract } = await this.getContract();
     try {

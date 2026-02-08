@@ -1,11 +1,12 @@
 const MockLedger = require("./mockLedger");
-const BlockchainLedger = require("./blockchainLedger");
 
 // Factory that returns the configured ledger instance.
 const createLedger = () => {
   const type = (process.env.LEDGER_TYPE || "mock").toLowerCase();
 
   if (type === "blockchain") {
+    // Lazy require to avoid loading Fabric in mock mode
+    const BlockchainLedger = require("./blockchainLedger");
     return new BlockchainLedger();
   }
 
