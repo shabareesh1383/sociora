@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 // Very small JWT auth middleware
 const auth = (req, res, next) => {
   const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.split(" ")[1] : null;
+  const token = header.toLowerCase().startsWith("bearer ") ? header.split(" ")[1] : null;
 
   if (!token) {
     return res.status(401).json({ message: "No token provided" });

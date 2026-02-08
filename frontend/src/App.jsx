@@ -1,346 +1,251 @@
 import { useEffect, useState } from "react";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import HomePage from "./pages/HomePage";
+import WatchPage from "./pages/WatchPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import UploadPage from "./pages/UploadPage";
+import InvestmentsPage from "./pages/InvestmentsPage";
+import ProfilePage from "./pages/ProfilePage";
+import CreatorDashboard from "./pages/CreatorDashboard";
+import InvestorDashboard from "./pages/InvestorDashboard";
+import WalletPage from "./pages/WalletPage";
+import TemplateMarketplace from "./pages/TemplateMarketplace";
+import CreateTemplate from "./pages/CreateTemplate";
 
 const getStoredAuth = () => {
   const raw = localStorage.getItem("socioraAuth");
   return raw ? JSON.parse(raw) : null;
 };
 
+const ProtectedRoute = ({ element, auth }) => {
+  return auth ? element : <Navigate to="/login" replace />;
+};
+
 const App = () => {
   const [auth, setAuth] = useState(getStoredAuth());
-  const [signupForm, setSignupForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "creator"
-  });
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
-
-  const [videos, setVideos] = useState([]);
-  const [ledger, setLedger] = useState([]);
-  const [myInvestments, setMyInvestments] = useState([]);
-
-  const [uploadForm, setUploadForm] = useState({ title: "", description: "" });
-  const [uploadFile, setUploadFile] = useState(null);
-  const [investAmount, setInvestAmount] = useState(10);
   const [message, setMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const getAuthHeaders = () => {
-  const raw = localStorage.getItem("socioraAuth");
-  if (!raw) return {};
-  const parsed = JSON.parse(raw);
-  return { Authorization: `Bearer ${parsed.token}` };
-};
-
-
-  /* -------------------- LOADERS -------------------- */
-
-  const loadVideos = async () => {
-    const res = await fetch(`${API_BASE}/api/videos`);
-    const data = await res.json();
-    setVideos(data);
-  };
-
-  const loadLedger = async () => {
-    const res = await fetch(`${API_BASE}/api/transactions`);
-    const data = await res.json();
-    setLedger(data);
-  };
-
-  const fetchMyInvestments = async () => {
-  const raw = localStorage.getItem("socioraAuth");
-  if (!raw) return;
-
-  const { token } = JSON.parse(raw);
-
-  const res = await fetch(`${API_BASE}/api/transactions/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-
-  const data = await res.json();
-  setMyInvestments(Array.isArray(data) ? data : []);
-};
-
-
+  // Clear message after 5 seconds
   useEffect(() => {
-    loadVideos();
-    loadLedger();
-  }, []);
-
-  useEffect(() => {
-    fetchMyInvestments();
-  }, [auth]);
-
-  /* -------------------- AUTH -------------------- */
-
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    setMessage("");
-
-    const res = await fetch(`${API_BASE}/api/auth/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(signupForm)
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      setMessage(data.message || "Signup failed");
-      return;
+    if (message) {
+      const timer = setTimeout(() => setMessage(""), 5000);
+      return () => clearTimeout(timer);
     }
-
-    setMessage("Signup successful! Please login.");
-  };
-
-  const handleLogin = async (event) => {
-  event.preventDefault();
-  setMessage("");
-
-  const res = await fetch(`${API_BASE}/api/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(loginForm)
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    setMessage(data.message || "Login failed");
-    return;
-  }
-
-  localStorage.setItem("socioraAuth", JSON.stringify(data));
-  setAuth(data);
-  await fetchMyInvestments();   
-  setMessage("Logged in!");
-};
-
+  }, [message]);
 
   const handleLogout = () => {
     localStorage.removeItem("socioraAuth");
     setAuth(null);
-    setMyInvestments([]);
+    setMessage("✅ Logged out successfully!");
   };
 
-  /* -------------------- VIDEO UPLOAD -------------------- */
-
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    setMessage("");
-
-    if (!uploadFile) {
-      setMessage("Please select a video");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("title", uploadForm.title);
-    formData.append("description", uploadForm.description);
-    formData.append("video", uploadFile);
-
-    const res = await fetch(`${API_BASE}/api/videos`, {
-      method: "POST",
-      headers: authHeaders,
-      body: formData
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      setMessage(data.message || "Upload failed");
-      return;
-    }
-
-    setMessage("Video uploaded!");
-    setUploadForm({ title: "", description: "" });
-    setUploadFile(null);
-    loadVideos();
+  const handleAuthUpdate = (updatedAuth) => {
+    setAuth(updatedAuth);
   };
-
-  /* -------------------- INVEST -------------------- */
-
-  const handleInvest = async (video) => {
-  setMessage("");
-
-  const res = await fetch(`${API_BASE}/api/transactions/invest`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders()
-    },
-    body: JSON.stringify({
-      videoId: video._id,
-      toCreator: video.creatorId,
-      amount: Number(investAmount)
-    })
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    setMessage(data.message || "Investment failed");
-    return;
-  }
-
-  setMessage("Investment recorded!");
-  await fetchMyInvestments();
-  loadLedger();
-
-};
-
-  /* -------------------- TOTALS -------------------- */
-
-  const totalInvested = ledger
-    .filter(tx => !tx.transactionType)
-    .reduce((sum, tx) => sum + tx.amount, 0);
-
-  const totalDistributed = ledger
-    .filter(tx => tx.transactionType === "DISTRIBUTION")
-    .reduce((sum, tx) => sum + tx.amount, 0);
-
-  /* -------------------- UI -------------------- */
 
   return (
-    <div className="page">
-      <header>
-        <h1>Sociora MVP</h1>
-        <p>Invest in creators with transparent transactions.</p>
-      </header>
+    <BrowserRouter>
+      <div className="app">
+        {/* Navbar persistent across all pages */}
+        <Navbar 
+          auth={auth} 
+          logout={handleLogout}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
 
-      {message && <div className="message">{message}</div>}
+        {/* Message display */}
+        {message && <div className="message">{message}</div>}
 
-      {/* AUTH */}
-      <section className="card">
-        <h2>Auth</h2>
-        <div className="grid">
-          <form onSubmit={handleSignup}>
-            <h3>Signup</h3>
-            <input placeholder="Name" required
-              value={signupForm.name}
-              onChange={e => setSignupForm({ ...signupForm, name: e.target.value })}
-            />
-            <input placeholder="Email" type="email" required
-              value={signupForm.email}
-              onChange={e => setSignupForm({ ...signupForm, email: e.target.value })}
-            />
-            <input placeholder="Password" type="password" required
-              value={signupForm.password}
-              onChange={e => setSignupForm({ ...signupForm, password: e.target.value })}
-            />
-            <select
-              value={signupForm.role}
-              onChange={e => setSignupForm({ ...signupForm, role: e.target.value })}
-            >
-              <option value="creator">Creator</option>
-              <option value="user">User</option>
-            </select>
-            <button>Create account</button>
-          </form>
-
-          <form onSubmit={handleLogin}>
-            <h3>Login</h3>
-            <input placeholder="Email" type="email" required
-              value={loginForm.email}
-              onChange={e => setLoginForm({ ...loginForm, email: e.target.value })}
-            />
-            <input placeholder="Password" type="password" required
-              value={loginForm.password}
-              onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}
-            />
-            <button>Login</button>
-            {auth && (
-              <button type="button" className="secondary" onClick={handleLogout}>
-                Logout
-              </button>
-            )}
-          </form>
-        </div>
-      </section>
-
-      {/* UPLOAD */}
-      <section className="card">
-        <h2>Upload a Video</h2>
-        <form onSubmit={handleUpload} className="stack">
-          <input placeholder="Title" required
-            value={uploadForm.title}
-            onChange={e => setUploadForm({ ...uploadForm, title: e.target.value })}
+        {/* Routes */}
+        <Routes>
+          <Route 
+            path="/" 
+            element={
+              <HomePage 
+                auth={auth}
+                searchQuery={searchQuery}
+                setMessage={setMessage}
+              />
+            } 
           />
-          <textarea placeholder="Description" required
-            value={uploadForm.description}
-            onChange={e => setUploadForm({ ...uploadForm, description: e.target.value })}
+
+          <Route 
+            path="/watch/:videoId" 
+            element={
+              <WatchPage 
+                auth={auth}
+                setMessage={setMessage}
+                onAuthUpdate={handleAuthUpdate}
+              />
+            } 
           />
-          <input type="file" accept="video/*" required
-            onChange={e => setUploadFile(e.target.files[0])}
+
+          <Route 
+            path="/login" 
+            element={
+              auth ? (
+                <Navigate to="/" replace />
+              ) : (
+                <LoginPage 
+                  setAuth={setAuth}
+                  setMessage={setMessage}
+                />
+              )
+            } 
           />
-          <button>Upload</button>
-        </form>
-      </section>
 
-      {/* VIDEOS */}
-      <section className="card">
-        <h2>Videos</h2>
-        <label>
-          Invest amount (USD)
-          <input
-            type="number"
-            min="1"
-            value={investAmount}
-            onChange={e => setInvestAmount(e.target.value)}
+          <Route 
+            path="/signup" 
+            element={
+              auth ? (
+                <Navigate to="/" replace />
+              ) : (
+                <SignupPage 
+                  setMessage={setMessage}
+                  onAuthUpdate={handleAuthUpdate}
+                />
+              )
+            } 
           />
-        </label>
 
-        {videos.map(video => (
-          <div key={video._id} className="video-row">
-            <div>
-              <h3>{video.title}</h3>
-              <p>{video.description}</p>
-            </div>
-            <button onClick={() => handleInvest(video)} disabled={!auth}>
-              {auth ? "Invest" : "Login to invest"}
-            </button>
-          </div>
-        ))}
-      </section>
+          <Route 
+            path="/upload" 
+            element={
+              <ProtectedRoute
+                auth={auth}
+                element={
+                  auth?.role === "creator" ? (
+                    <UploadPage 
+                      auth={auth}
+                      setMessage={setMessage}
+                    />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                }
+              />
+            } 
+          />
 
-      {/* MY INVESTMENTS */}
-<section className="card">
-  <h2>My Investments</h2>
+          <Route 
+            path="/investments" 
+            element={
+              <ProtectedRoute
+                auth={auth}
+                element={
+                  <InvestmentsPage 
+                    auth={auth}
+                    setMessage={setMessage}
+                  />
+                }
+              />
+            } 
+          />
 
-  {myInvestments.length === 0 && <p>No investments yet.</p>}
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute
+                auth={auth}
+                element={
+                  <ProfilePage 
+                    auth={auth}
+                    setMessage={setMessage}
+                    onLogout={handleLogout}
+                    onAuthUpdate={handleAuthUpdate}
+                  />
+                }
+              />
+            } 
+          />
 
-  <ul className="ledger">
-    {myInvestments.map((tx) => (
-      <li key={tx.txId}>
-        <strong>{tx.amount} USD</strong>{" "}
-        invested in{" "}
-        <strong>
-          {tx.videoId ? "Video" : "Unknown Video"}
-        </strong>{" "}
-        on {new Date(tx.timestamp).toLocaleString()}
-      </li>
-    ))}
-  </ul>
-</section>
+          <Route 
+            path="/creator-dashboard" 
+            element={
+              <ProtectedRoute
+                auth={auth}
+                element={
+                  auth?.role === "creator" ? (
+                    <CreatorDashboard 
+                      auth={auth}
+                      setMessage={setMessage}
+                    />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                }
+              />
+            } 
+          />
 
+          <Route 
+            path="/investor-dashboard" 
+            element={
+              <ProtectedRoute
+                auth={auth}
+                element={
+                  <InvestorDashboard 
+                    auth={auth}
+                    setMessage={setMessage}
+                  />
+                }
+              />
+            } 
+          />
 
-      {/* TRANSPARENCY */}
-      <section className="card">
-        <h2>Transparency Dashboard</h2>
-        <p><strong>Total Invested:</strong> {totalInvested} USD</p>
-        <p><strong>Total Distributed:</strong> {totalDistributed} USD</p>
+          <Route 
+            path="/wallet" 
+            element={
+              <ProtectedRoute
+                auth={auth}
+                element={
+                  <WalletPage 
+                    auth={auth}
+                    setMessage={setMessage}
+                  />
+                }
+              />
+            } 
+          />
 
-        <ul className="ledger">
-          {ledger.map(tx => (
-            <li key={tx.txId}>
-              <strong>{tx.amount} USD</strong>{" "}
-              from {tx.fromUser === "platform" ? "Platform" : "User"}{" "}
-              to {tx.toCreator === "platform" ? "Platform" : "Creator"}{" "}
-              on {new Date(tx.timestamp).toLocaleString()}
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
+          <Route 
+            path="/templates" 
+            element={
+              <TemplateMarketplace 
+                auth={auth}
+                setMessage={setMessage}
+              />
+            } 
+          />
+
+          <Route 
+            path="/create-template" 
+            element={
+              <ProtectedRoute
+                auth={auth}
+                element={
+                  auth?.role === "creator" ? (
+                    <CreateTemplate 
+                      auth={auth}
+                      setMessage={setMessage}
+                    />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                }
+              />
+            } 
+          />
+
+          {/* 404 - Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 };
 
